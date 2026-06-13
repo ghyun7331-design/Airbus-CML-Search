@@ -56,10 +56,17 @@ def make_table_row(line, col_count):
     if not "".join(cells).strip():
         return ""
 
-    # Old Code 패턴 예시: "01-004A", "01-004X", "01-911" 등 (숫자 2개 - 영문/숫자 3~4개 조합)
+    # 🌟 [위치 지정 로직] 표의 칸 수에 따라 Old Code의 정확한 위치를 찾아 넣습니다.
     if len(cells) == 1:
         if re.match(r'^\d{2}-[\w\d]{3,4}$', cells[0]):
-            cells = [''] * (col_count - 1) + cells
+            if col_count == 5:
+                # Application Information 표 (총 5칸) -> Old Code는 3번째 칸
+                cells = ['', '', cells[0], '', '']
+            elif col_count == 7:
+                # Products 표 (총 7칸) -> Old Code는 7번째 칸(맨 끝)
+                cells = ['', '', '', '', '', '', cells[0]]
+            else:
+                cells = [''] * (col_count - 1) + cells
             
     # 혹시 모를 배열 부족 시 에러 방지용 (빈칸 채우기)
     if len(cells) < col_count:
@@ -71,8 +78,7 @@ def make_table_row(line, col_count):
         val = cells[i] if i < len(cells) else ""
         if val == '-': val = "" 
         
-        # 🌟 [수정된 부분] 엑셀/구글시트에서 줄바꿈(\n)이 된 채로 데이터가 들어왔다면,
-        # HTML 웹사이트에서도 똑같이 줄바꿈(<br>) 되도록 만들어주는 핵심 로직입니다.
+        # 🌟 [줄바꿈 로직] 구글 시트의 줄바꿈(\n)을 웹 화면 줄바꿈(<br>)으로 변환
         if isinstance(val, str) and '\n' in val:
             val = val.replace('\n', '<br>')
             
