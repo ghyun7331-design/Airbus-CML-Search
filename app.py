@@ -56,12 +56,9 @@ def make_table_row(line, col_count):
     if not "".join(cells).strip():
         return ""
 
-    # 🌟 [최종 수정] 공백이 유실되었더라도 패턴을 인식해 무조건 끝 열로 밀어내는 강력한 로직
     # Old Code 패턴 예시: "01-004A", "01-004X", "01-911" 등 (숫자 2개 - 영문/숫자 3~4개 조합)
     if len(cells) == 1:
-        # 셀 안에 글자가 1개밖에 없는데, 그 글자가 Old Code 패턴과 일치한다면
         if re.match(r'^\d{2}-[\w\d]{3,4}$', cells[0]):
-            # 나머지 앞 칸들을 모두 빈칸('')으로 채우고 마지막에 Old Code를 배치합니다.
             cells = [''] * (col_count - 1) + cells
             
     # 혹시 모를 배열 부족 시 에러 방지용 (빈칸 채우기)
@@ -73,6 +70,12 @@ def make_table_row(line, col_count):
     for i in range(col_count):
         val = cells[i] if i < len(cells) else ""
         if val == '-': val = "" 
+        
+        # 🌟 [수정된 부분] 엑셀/구글시트에서 줄바꿈(\n)이 된 채로 데이터가 들어왔다면,
+        # HTML 웹사이트에서도 똑같이 줄바꿈(<br>) 되도록 만들어주는 핵심 로직입니다.
+        if isinstance(val, str) and '\n' in val:
+            val = val.replace('\n', '<br>')
+            
         row_html += f"<td>{val}</td>"
     row_html += "</tr>"
     return row_html
@@ -129,7 +132,6 @@ def main():
                 current_ac = "** ON A/C ALL"
                 
                 for row in raw_lines:
-                    # 빈 줄 무시
                     if not row or not row[0].strip():
                         continue
                         
