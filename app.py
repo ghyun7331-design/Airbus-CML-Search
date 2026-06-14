@@ -4,6 +4,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 import os
 import re
+import json
 
 st.set_page_config(page_title="CML 검색 시스템", layout="wide", page_icon="✈️")
 
@@ -13,11 +14,11 @@ def get_google_sheet_doc(spreadsheet_id):
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
     ]
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    key_file = os.path.join(current_dir, "credentials.json")
     
     try:
-        creds = ServiceAccountCredentials.from_json_keyfile_name(key_file, scope)
+        # 🌟 이제 파일이 아닌, 안전하게 숨겨둔 Streamlit Secrets에서 열쇠를 꺼내옵니다.
+        key_dict = json.loads(st.secrets["gcp_key"])
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
         client = gspread.authorize(creds)
         return client.open_by_key(spreadsheet_id)
     except Exception as e:
@@ -56,14 +57,12 @@ def make_table_row(line, col_count):
     if not "".join(cells).strip():
         return ""
 
-    # 🌟 [위치 지정 로직] 표의 칸 수에 따라 Old Code의 정확한 위치를 찾아 넣습니다.
+    # 표의 칸 수에 따라 Old Code의 정확한 위치를 찾아 넣습니다.
     if len(cells) == 1:
         if re.match(r'^\d{2}-[\w\d]{3,4}$', cells[0]):
             if col_count == 5:
-                # Application Information 표 (총 5칸) -> Old Code는 3번째 칸
                 cells = ['', '', cells[0], '', '']
             elif col_count == 7:
-                # Products 표 (총 7칸) -> Old Code는 7번째 칸(맨 끝)
                 cells = ['', '', '', '', '', '', cells[0]]
             else:
                 cells = [''] * (col_count - 1) + cells
@@ -78,7 +77,7 @@ def make_table_row(line, col_count):
         val = cells[i] if i < len(cells) else ""
         if val == '-': val = "" 
         
-        # 🌟 [줄바꿈 로직] 구글 시트의 줄바꿈(\n)을 웹 화면 줄바꿈(<br>)으로 변환
+        # 줄바꿈(\n)을 웹 화면 줄바꿈(<br>)으로 변환
         if isinstance(val, str) and '\n' in val:
             val = val.replace('\n', '<br>')
             
@@ -108,7 +107,7 @@ def main():
     
     doc = get_google_sheet_doc(SPREADSHEET_ID)
     if doc is None:
-        st.warning("credentials.json 파일을 확인해 주세요.")
+        st.warning("스트림릿 Secrets에 구글 시트 키가 등록되지 않았거나 오류가 있습니다.")
         return
 
     with st.spinner("🔄 구글 시트에서 최신 데이터를 동기화 중입니다... (최초 1회만 소요)"):
