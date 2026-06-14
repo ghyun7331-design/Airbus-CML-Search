@@ -4,7 +4,6 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 import os
 import re
-import json
 
 st.set_page_config(page_title="CML 검색 시스템", layout="wide", page_icon="✈️")
 
@@ -16,8 +15,8 @@ def get_google_sheet_doc(spreadsheet_id):
     ]
     
     try:
-        # 🌟 이제 파일이 아닌, 안전하게 숨겨둔 Streamlit Secrets에서 열쇠를 꺼내옵니다.
-        key_dict = json.loads(st.secrets["gcp_key"])
+        # 🌟 JSON 변환 에러 없이, 가장 안전하고 직관적으로 Secrets를 읽어오는 방식입니다.
+        key_dict = dict(st.secrets["gcp_key"])
         creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
         client = gspread.authorize(creds)
         return client.open_by_key(spreadsheet_id)
